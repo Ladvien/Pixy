@@ -40,9 +40,20 @@ int servoPosY = 90;
 //Given, 90 is middle.
 int PanLowLimit = 1; 
 int PanHighLimit = 180; 
-int TiltLowLimit = 75; 
+int TiltLowLimit = 50; 
 int TiltHighLimit = 95;
 
+//Adjust to control how many servo positions are changed at once.
+int servoMaxJumpX = 7;
+int servoMaxJumpY = 3;
+
+//Centered margin limits.
+int xLowCenterLimit = 80;
+int xHighCenterLimit = 240;
+int yLowCenterLimit = 40;
+int yHighCenterLimit = 160;
+
+int servoJumpDelay = 20;
 
 //X and Y of the largest mass.
 int OOIX1;  //Object of Interest X1
@@ -111,109 +122,72 @@ void loop() {
 
 
 void ServoWrite(){
-
-
-RightMargin = 320-(OOIX1 + pixy.blocks[pMaxIXY].width);  //This assumes the Pixy has a field of view 320 pixels wide.
-LeftMargin = OOIX1; //Object of interest's X is the same as the left margin marker.
-BottomMargin = 240-(OOIY1 + pixy.blocks[pMaxIXY].height); //This assumes the Pixy has a field of view 240 pixels high.
-TopMargin = OOIY1; //The object of interest's Y is the same as the top margin marker.
-
-
-//First, let's check to see if the OOI is centered enough.
-
-if (OOIX1 > 100 && OOIX1 < 220){
-    Serial.println("Centered.");
-    delay(100);
-}
-
-else { //It's not centered, let's move servos and center it.
-      //First, see which is greater left or right margin.
-      //Serial.println(servoPosX);
-      if(RightMargin >= LeftMargin){
-        if(servoPosX > PanLowLimit){ 
-          int moveX;
-          moveX = LeftMargin/2;
-          moveX = map(moveX, LeftMargin, 320, 90, 180);
-          servoPosX = moveX;
-          pixyServoX.write(servoPosX);
-          //Serial.println(servoPosX);
-          Serial.println(RightMargin);
-          //Serial.println(moveX);
-          Serial.println("Right.");
-          delay(130);
+  
+  RightMargin = 320 - (OOIX1 + (pixy.blocks[pMaxIXY].width/2));  //This assumes the Pixy has a field of view 320 pixels wide.
+  LeftMargin = OOIX1; //Object of interest's X is the same as the left margin marker.
+  BottomMargin = 240 - (OOIY1 + (pixy.blocks[pMaxIXY].height/2)); //This assumes the Pixy has a field of view 240 pixels high.
+  TopMargin = OOIY1; //The object of interest's Y is the same as the top margin marker.
+  
+  
+  //First, let's check to see if the OOI is centered enough.
+  if (OOIX1 > xLowCenterLimit && OOIX1 < xHighCenterLimit){
+      delay(servoJumpDelay);
+  }
+  else { //It's not centered, let's move servos and center it.
+        //First, see which is greater left or right margin.
+        if(RightMargin >= LeftMargin){
+          if(servoPosX < PanHighLimit){ 
+            int moveX;
+            moveX = RightMargin;
+            moveX = map(moveX, 0, RightMargin, 0, servoMaxJumpX);
+            servoPosX = servoPosX + moveX;
+            pixyServoX.write(servoPosX);
+            delay(servoJumpDelay);
+            }
+        }
+      else{  
+       //Left Margin was greater, so lets move stage-right. 
+       if(servoPosX > PanLowLimit){ 
+            //Right Margin was greater, so lets move stage-left.
+            int moveX;
+            moveX = LeftMargin;
+            moveX = map(moveX, 0, LeftMargin, 0, servoMaxJumpX);
+            servoPosX = servoPosX - moveX;
+            pixyServoX.write(servoPosX);
+            delay(servoJumpDelay);
           }
       }
-    else{  
-    //if (LeftMargin > RightMargin){
-     //Left Margin was greater, so lets move stage-right. 
-     if(servoPosX < PanHighLimit){ 
-          //Right Margin was greater, so lets move stage-left.
-          int moveX;
-          moveX = RightMargin/2;
-          moveX = map(moveX, 0, RightMargin, 0, 90);
-          servoPosX = moveX;
-          pixyServoX.write(servoPosX);
-          //Serial.println(servoPosX);
-          Serial.println(LeftMargin);
-          //Serial.println(moveX);
-          Serial.println("Left.");
-          delay(130);
+  }
+
+
+  //First, let's check to see if the OOI is centered enough.
+  if (OOIY1 > yLowCenterLimit && OOIY1 < yHighCenterLimit){
+      delay(servoJumpDelay);
+  }
+  else { //It's not centered, let's move servos and center it.
+        //First, see which is greater bottom or top margin.
+        if(BottomMargin >= TopMargin){
+          if(servoPosY > TiltLowLimit){ 
+            int moveY;
+            moveY = BottomMargin;
+            moveY = map(moveY, 0, BottomMargin, 0, servoMaxJumpY);
+            servoPosY = servoPosY - moveY;
+            pixyServoY.write(servoPosY);
+            delay(servoJumpDelay);
+            }
         }
-    }
-}
+      else{  
+       //Top Margin was greater, so lets move stage-up. 
+       if(servoPosY < TiltHighLimit){ 
+            //Topt Margin was greater, so lets move stage-up.
+            int moveY;
+            moveY = TopMargin;
+            moveY = map(moveY, 0, TopMargin, 0, servoMaxJumpY);
+            servoPosY = servoPosY + moveY;
+            pixyServoY.write(servoPosY);
+            delay(servoJumpDelay);
+          }
+      }
+  }
 
-
-
-  /*
-//X
-  if(OOIX1 > 280){
-    if(servoPosX>7){
-      servoPosX=servoPosX-7;
-      pixyServoX.write(servoPosX);    
-      delay(10);
-    }
-  }
-  if(OOIX1 < 40){
-    if(servoPosX<173)
-    {
-      servoPosX=servoPosX+7;
-      pixyServoX.write(servoPosX);
-      delay(10);    
-    }
-  }
-  
-  if(OOIX1 > 220){
-    if(servoPosX>4){
-      servoPosX=servoPosX-3;
-      pixyServoX.write(servoPosX);    
-      delay(1);
-    }
-  }
-  if(OOIX1 < 80){
-    if(servoPosX<177)
-    {
-      servoPosX=servoPosX+3;
-      pixyServoX.write(servoPosX);
-      delay(1);    
-    }
-  }
-  
-//Y
-  if(OOIY1 < 60){
-    if(servoPosY>0)
-    {
-      servoPosY=servoPosY-2;
-      pixyServoY.write(servoPosY);
-      delay(5);    
-    }
-  }
-  if(OOIY1 > 170){
-    if(servoPosY<91)
-    {
-      servoPosY=servoPosY+2;
-      pixyServoY.write(servoPosY);
-      delay(5);    
-    }
-  }  
-  */
-}
+} //End ServoWrite()
